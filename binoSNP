@@ -1,0 +1,198 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use Getopt::Long;
+use File::Basename;
+use FindBin qw($RealBin);
+
+my $VERSION =  "1.0.0";
+
+###define PATHs.
+my $VAR_dir       =     "$RealBin/var";
+my $BIN_dir       =     "$RealBin/bin";
+
+###initialize command-line parameter.
+my $interval_list       =      "";
+my $refalt_table        =      "";
+my $out_dir             =      "";
+my $ref                 =      "";
+my $opt_version         =      "";
+my $help                =      "";
+my $pvalue              =      "";
+
+###get command-line parameter.
+GetOptions(
+   'interval|i=s'        =>    \$interval_list,
+   'mut|m=s'             =>    \$refalt_table,
+   'outdir|o=s'          =>    \$out_dir,
+   'ref|r=s'             =>    \$ref,
+   'pvalue|p=f'          =>    \$pvalue,
+   'help|h'              =>    \$help,
+   'version|v'           =>    \$opt_version);
+
+###print help message if specified or version if specified.
+if($help eq '1') { help($VERSION);     exit 0; }
+if($opt_version eq '1') { version($VERSION);     exit 0; }
+
+###get bam files from command-line.
+my @bam_files = @ARGV;
+die "<ERROR>\t",timer(),"\tNo BAM files specified. Run: binoSNP --help for usage information!\n" if ! @bam_files;
+
+if($out_dir                   eq    ''    ) { $out_dir            =     "Low_Freq";                         }
+if($ref                       eq    ''    ) { $ref                =     "M._tuberculosis_H37Rv_2015-11-13"; }
+if($interval_list             eq    ''    ) { $interval_list      =     "NONE";                             }
+if($refalt_table              eq    ''    ) { $refalt_table       =     "NONE";                             }
+if($pvalue                    eq    ''    ) { $pvalue             =     0.05;                               }
+die "\n<ERROR>\t",timer(),"\tUnable to create $out_dir\n" 	unless(-d $out_dir or mkdir $out_dir);
+
+if($ref eq 'M._tuberculosis_H37Rv_2015-11-13') {
+   $ref                  =   "$RealBin/var/M._tuberculosis_H37Rv_2015-11-13.fasta";
+   $interval_list        =   "$RealBin/var/Resisnps_Master.v28.interval_list.tsv"             if($interval_list eq 'NONE');
+   $refalt_table         =   "$RealBin/var/Resisnps_Master.v28_RefuAlt.tsv"                   if($refalt_table eq 'NONE');
+}
+######format of input files######
+###interval_list format:
+#M.tuberculosis_H37Rv\tstart1\tstop1
+#M.tuberculosis_H37Rv\tstart2\tstop2
+#M.tuberculosis_H37Rv\tstart3\tstop3
+#M.tuberculosis_H37Rv\tstart4\tstop4
+
+###RefAlt_table format:
+#Pos\tREF\tALT\Antibiotic
+
+
+###initialize variable
+my $bamfile;
+my $do;
+my %h;
+my %h2;
+my $dir;
+my $table;
+
+###run binoSNP on all input bam files.
+foreach my $file (@bam_files) {
+  next unless (-f "$file");
+  next unless ($file =~ /^(.+).bam/);
+  $bamfile = $1;
+  $bamfile = basename($bamfile);
+  print "\n<INFO>\t",timer(),"\tProcessing $file\n";
+  while ($dir=<${out_dir}/${bamfile}*.table>){
+  $h{$1}=1;
+  }
+  if (defined $h{$1}){
+  print "\n<INFO>\t",timer(),"\t${1}.bam has already been processed\n";
+  }
+  unless(defined $h{$1}){
+###call bam-readcount on bam file
+  $do="bam-readcount $file -b 20 -w 0 -f $ref -l $interval_list > $out_dir/$bamfile.txt ";
+  print "\n<INFO>\t",timer(),"\tStarting bam-readcount\n";
+  print "\n<INFO>\t",timer(),"\t".$do."\n";
+  system($do); if ($?){die "\n<ERROR>\t",timer(),"\t$do did not work: $?\n";}
+  print "\n<INFO>\t",timer(),"\tFinished bam-readcount\n";
+###covert bam-readcount results to table and do binomial test
+  print "\n<INFO>\t",timer(),"\tStarting binomial test\n";
+  $do="perl $BIN_dir/readcount2table_binomial.pl $out_dir/$bamfile.table $out_dir/$bamfile.txt $refalt_table";
+  print "\n<INFO>\t",timer(),"".$do."\n";
+  system($do); if ($?){die "\n<ERROR>\t",timer(),"\t$do did not work: $?\n";}
+  print "\n<INFO>\t",timer(),"\tFinished binomial test\n";
+  }
+###filter table by set p-value threshold
+  print "\n<INFO>\t",timer(),"\tFilter by p-value ${pvalue}\n";
+  while ($table=<${out_dir}/${bamfile}*.table>){
+  $table = basename($table);
+    if ($table =~ /(${bamfile}\_${pvalue}.+)/){$h2{$1}=1;
+    }
+  }
+
+  if (defined $h2{"${bamfile}_${pvalue}-filtered.table"}){print "\n<INFO>\t",timer(),"\t${bamfile}.table has already been filtered by this p-value\n";}
+  unless(defined $h2{"${bamfile}_${pvalue}-filtered.table"}){
+  open(Fin,"<${out_dir}/${bamfile}.table") or die "\n<ERROR>\t",timer(),"\tUnable to open ${bamfile}.table\n";
+  open(Fout,">${out_dir}/${bamfile}_${pvalue}-filtered.table") or die "\n<ERROR>\t",timer(),"\tUnable to create ${bamfile}_${pvalue}-filtered.table\n";
+
+  print Fout "POS\tREF\tALT\tDP\t#ALT\tFreq(ALT)\tQual(ALT)\tp-value\tantibiotic\n";
+  my @array;
+  my $line;
+  $line=<Fin>;
+    while($line=<Fin>){
+    @array=split("\t", $line);
+        if ($array[19]<=$pvalue){
+            if ($array[2] eq "A"){
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[4]\t$array[17]\t$array[18]\t$array[19]\t$array[20]";}
+            elsif($array[2] eq "C"){
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[7]\t$array[17]\t$array[18]\t$array[19]\t$array[20]";}
+            elsif($array[2] eq "G"){
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[10]\t$array[17]\t$array[18]\t$array[19]\t$array[20]";}
+            elsif($array[2] eq "T"){
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[13]\t$array[17]\t$array[18]\t$array[19]\t$array[20]";}
+            else {print "$line\n";}
+        }
+    }
+  close Fout;
+  close Fin;
+  }
+}
+
+sub timer { # set the time when required.
+   my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();
+   $year += 1900;
+   $mon  += 1;
+   if(length($mon) == 1 ) {
+      $mon     =  "0$mon";
+   }
+   if(length($mday) == 1 ) {
+      $mday    =  "0$mday";
+   }
+   
+   if(length($hour) == 1) {
+      $hour    =  "0$hour";
+   }
+   if(length($min) ==1 ) {
+      $min     =  "0$min";
+   }
+   if(length($sec) == 1 ) {
+      $sec     =  "0$sec";
+   }
+   my $date_string   =  $year . "-" . $mon . "-" . $mday;
+   my $time_string   =  $hour . ":" . $min . ":" . $sec;
+   my $answer_tmp    =  "[" . $date_string . " " . $time_string . "]";
+   return($answer_tmp);
+}
+
+sub help { # print a help message.
+   my $VERSION =  shift;
+   print
+   "
+
+   binoSNP $VERSION - Copyright (C) 2019  Viola Dreyer, Christian Utpatel
+   
+   [USAGE]: binoSNP [--OPTION PARAMETER] <.bam file>
+   
+   Available OPTIONS and default PARAMETERS:
+   -i [--interval]      List of intervals to be analyzed
+                        Default [Resisnps_Master.v28.interval_list.tsv]
+
+   -m [--mut]           Mutation table (RefAlt table)
+                        Default [Resisnps_Master.v28_RefuAlt.tsv]
+
+   -o [--outdir]        Output directory
+                        Default [./Low_Freq]
+
+   -r [--ref]           Reference sequence used for aligment in fasta format
+                        Default [M._tuberculosis_H37Rv_2015-11-13.fasta]
+
+   -p [--pvalue]        p-value used to filter the results
+                        Default [0.05]
+
+   -h [--help]          This help message
+
+   -v [--version]       Version of binoSNP
+   ";
+   print "\n";
+}
+
+
+sub version { # print the binoSNP version
+   my $VERSION =  shift;
+   print "binoSNP $VERSION\n"
+}

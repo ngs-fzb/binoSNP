@@ -1,0 +1,30 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Keep LF EOL
+*.fai text eol=lf
+*.fasta text eol=lf
+*.vcf text eol=lf
+*.pl text eol=lf
+*.pm text eol=lf
+*.txt eol=lf
+*.tsv eol=lf
+
+
+# Keep as is
+*.vcf.idx binary
+
+# Custom for Visual Studio
+*.cs     diff=csharp
+
+# Standard to msysgit
+*.doc	 diff=astextplain
+*.DOC	 diff=astextplain
+*.docx diff=astextplain
+*.DOCX diff=astextplain
+*.dot  diff=astextplain
+*.DOT  diff=astextplain
+*.pdf  diff=astextplain
+*.PDF	 diff=astextplain
+*.rtf	 diff=astextplain
+*.RTF	 diff=astextplain
