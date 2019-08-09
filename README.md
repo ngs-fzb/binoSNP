@@ -6,7 +6,7 @@
 SNP detection based on binomial test procedure. Perl scripts with R integration and usage of bam-readcount algorithm. 
 
 <p align="center">
- <img src="https://github.com/ngs-fzb/binoSNP/blob/master/images/workflow.png" height="401" width="300">
+ <img src="https://github.com/ngs-fzb/binoSNP/blob/master/images/workflow.web.png">
 </p>
 
 *****
