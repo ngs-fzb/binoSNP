@@ -6,7 +6,7 @@ use Getopt::Long;
 use File::Basename;
 use FindBin qw($RealBin);
 
-my $VERSION =  "1.0.0";
+my $VERSION =  "1.0.1";
 
 ###define PATHs.
 my $VAR_dir       =     "$RealBin/var";
@@ -110,28 +110,32 @@ foreach my $file (@bam_files) {
   open(Fin,"<${out_dir}/${bamfile}.table") or die "\n<ERROR>\t",timer(),"\tUnable to open ${bamfile}.table\n";
   open(Fout,">${out_dir}/${bamfile}_${pvalue}-filtered.table") or die "\n<ERROR>\t",timer(),"\tUnable to create ${bamfile}_${pvalue}-filtered.table\n";
 
-  print Fout "POS\tREF\tALT\tDP\t#ALT\tFreq(ALT)\tQual(ALT)\tp-value\tantibiotic\n";
+  print Fout "POS\tREF\tALT\tDP\t#ALT\tFreq(ALT)\tQual(ALT)\tp-value\tAntibiotic\tComment\n";
   my @array;
   my $line;
   $line=<Fin>;
     while($line=<Fin>){
+    no warnings 'numeric';
     @array=split("\t", $line);
         if ($array[19]<=$pvalue){
             if ($array[2] eq "A"){
-            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[4]\t$array[17]\t$array[18]\t$array[19]\t$array[20]";}
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[4]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";}
             elsif($array[2] eq "C"){
-            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[7]\t$array[17]\t$array[18]\t$array[19]\t$array[20]";}
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[7]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";}
             elsif($array[2] eq "G"){
-            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[10]\t$array[17]\t$array[18]\t$array[19]\t$array[20]";}
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[10]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";}
             elsif($array[2] eq "T"){
-            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[13]\t$array[17]\t$array[18]\t$array[19]\t$array[20]";}
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[13]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";}
             else {print "$line\n";}
         }
     }
   close Fout;
   close Fin;
   }
+  print "\n<INFO>\t",timer(),"\tFinished processing $file\n";
 }
+print "\n<INFO>\t",timer(),"\tFinished processing all input files\n";
+exit(0);
 
 sub timer { # set the time when required.
    my ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime();

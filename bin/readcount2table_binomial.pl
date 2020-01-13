@@ -5,7 +5,7 @@ use List::Util qw/sum/;
 $num_args = $#ARGV + 1;
 
 if ($num_args != 3) {
-   print "\n Verwendung: readcount2table.pl /Pfad/zur/Ausgabe/dateiname.table /Pfad/zur/Eingabe.txt /Pfad/zur/Snps_RefuAlt.table\n";
+   print "\n Usage: readcount2table.pl /path/to/output/out.table /path/to/in.txt /path/to/Snps_RefuAlt.table\n";
     exit;
 }
 open(Fout,">$ARGV[0]") or die "\n\n\"Offnen von $ARGV[0] nicht m\"oglich\n\n\n";
@@ -13,7 +13,7 @@ open(Fin,"<$ARGV[1]") or die "\n\n\"Offnen von $ARGV[1] nicht m\"oglich\n\n\n";
 open(Fin2,"<$ARGV[2]") or die "\n\n\"Offnen von $ARGV[2] nicht m\"oglich\n\n\n";
 
 @ref=<Fin2>;#Zeilen der RefuAlt Tabelle in einem Array Speichern
-print Fout "POS\tREF\tALT\tDP\t#A\tQual(A)\tFreq(A)\t#C\tQual(C)\tFreq(C)\t#G\tQual(G)\tFreq(G)\t#T\tQual(T)\tFreq(T)\tType\tFreq(ALT)\tQual(ALT)\tp-value\tAntibiotic\n";
+print Fout "POS\tREF\tALT\tDP\t#A\tQual(A)\tFreq(A)\t#C\tQual(C)\tFreq(C)\t#G\tQual(G)\tFreq(G)\t#T\tQual(T)\tFreq(T)\tType\tFreq(ALT)\tQual(ALT)\tp-value\tAntibiotic\tComment\n";
 
 while($line=<Fin>){
 @array=split("\t", $line); #Jede Zeile des bam-readcount Datei nach Tabs auftrennen
@@ -30,12 +30,12 @@ $anzahl=@index; #Pr\"ufvariable, ob es mehrere alternative Basen und somit Doppe
 if($array[3] == 0){#Abfangen der illegal division by zero
 @zeile=split("\t", $index[0]);
 		  chomp($zeile[3]);
-print Fout "$zeile[0]\t$zeile[1]\t$zeile[2]\t$array[3]\t$As[1]\t$As[3]\t0\t$Cs[1]\t$Cs[3]\t0\t$Gs[1]\t$Gs[3]\t0\t$Ts[1]\t$Ts[3]\t-\t-\t-\t-\t-\t$zeile[3]\n";
+print Fout "$zeile[0]\t$zeile[1]\t$zeile[2]\t$array[3]\t$As[1]\t$As[3]\t0\t$Cs[1]\t$Cs[3]\t0\t$Gs[1]\t$Gs[3]\t0\t$Ts[1]\t$Ts[3]\t-\t-\t-\t-\t-\t$zeile[3]\t\n";
 }
 elsif(defined $DEL[0]){#Abfrage, ob es sich um eine Deletion handelt
     @zeile=split("\t", $index[0]);
 		  chomp($zeile[3]);
-    print Fout "$zeile[0]\t$zeile[1]\t$zeile[2]\t$array[3]\t$As[1]\t$As[3]\t0\t$Cs[1]\t$Cs[3]\t0\t$Gs[1]\t$Gs[3]\t0\t$Ts[1]\t$Ts[3]\t0\tDEL\t-\t-\t-\t$DEL[0] in $DEL[1] reads\n";}
+    print Fout "$zeile[0]\t$zeile[1]\t$zeile[2]\t$array[3]\t$As[1]\t$As[3]\t0\t$Cs[1]\t$Cs[3]\t0\t$Gs[1]\t$Gs[3]\t0\t$Ts[1]\t$Ts[3]\t0\tDEL\t-\t-\t-\t$zeile[3]\t$DEL[0] in $DEL[1] reads\n";}
 else{
 $freqA=$As[1]/$array[3];#Frequenz der Basen bestimmen
 $freqC=$Cs[1]/$array[3];
@@ -80,7 +80,7 @@ if ($anzahl == 1) {@zeile=split("\t", $index[0]);
 				      $Q=$R->get('p');#mittlerer zu erwartender Fehler
 				      }
 		  else {print "Fehler Else1\n";}
-	print Fout "$zeile[0]\t$zeile[1]\t$zeile[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT\t$qualALT\t$Q\t$zeile[3]\n";
+	print Fout "$zeile[0]\t$zeile[1]\t$zeile[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT\t$qualALT\t$Q\t$zeile[3]\t\n";
 		    $h{$array[1]}=1;
 }
   elsif ($anzahl == 2) {
@@ -154,8 +154,8 @@ if ($anzahl == 1) {@zeile=split("\t", $index[0]);
 				      $Q2=$R->get('p');#mittlerer zu erwartender Fehler
 				      }
 		  else {print "Fehler Else3\n";}
-	print Fout "$zeile[0]\t$zeile[1]\t$zeile[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT\t$qualALT\t$Q\t$zeile[3]\n";
-	print Fout "$zeile2[0]\t$zeile2[1]\t$zeile2[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT2\t$qualALT2\t$Q2\t$zeile2[3]\n";
+	print Fout "$zeile[0]\t$zeile[1]\t$zeile[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT\t$qualALT\t$Q\t$zeile[3]\t\n";
+	print Fout "$zeile2[0]\t$zeile2[1]\t$zeile2[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT2\t$qualALT2\t$Q2\t$zeile2[3]\t\n";
 	$h{$array[1]}=1;
    }
   elsif ($anzahl == 3) {
@@ -264,9 +264,9 @@ if ($anzahl == 1) {@zeile=split("\t", $index[0]);
 				      $Q3=$R->get('p');#mittlerer zu erwartender Fehler
 				      }
 		  else {print "Fehler Else6\n";}
-	print Fout "$zeile[0]\t$zeile[1]\t$zeile[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT\t$qualALT\t$Q\t$zeile[3]\n";
-	print Fout "$zeile2[0]\t$zeile2[1]\t$zeile2[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT2\t$qualALT2\t$Q2\t$zeile2[3]\n";
-	print Fout "$zeile3[0]\t$zeile3[1]\t$zeile3[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT3\t$qualALT3\t$Q3\t$zeile3[3]\n";
+	print Fout "$zeile[0]\t$zeile[1]\t$zeile[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT\t$qualALT\t$Q\t$zeile[3]\t\n";
+	print Fout "$zeile2[0]\t$zeile2[1]\t$zeile2[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT2\t$qualALT2\t$Q2\t$zeile2[3]\t\n";
+	print Fout "$zeile3[0]\t$zeile3[1]\t$zeile3[2]\t$array[3]\t$As[1]\t$As[3]\t$freqA\t$Cs[1]\t$Cs[3]\t$freqC\t$Gs[1]\t$Gs[3]\t$freqG\t$Ts[1]\t$Ts[3]\t$freqT\tSNP\t$freqALT3\t$qualALT3\t$Q3\t$zeile3[3]\t\n";
 	$h{$array[1]}=1;
   }
 else{print "Was ist mit Position $array[1]?\n"}  #Fehler abfangen
