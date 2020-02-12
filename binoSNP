@@ -109,8 +109,21 @@ foreach my $file (@bam_files) {
   unless(defined $h2{"${bamfile}_${pvalue}-filtered.table"}){
   open(Fin,"<${out_dir}/${bamfile}.table") or die "\n<ERROR>\t",timer(),"\tUnable to open ${bamfile}.table\n";
   open(Fout,">${out_dir}/${bamfile}_${pvalue}-filtered.table") or die "\n<ERROR>\t",timer(),"\tUnable to create ${bamfile}_${pvalue}-filtered.table\n";
+  open(Fout2,">${out_dir}/${bamfile}.vcf") or die "\n<ERROR>\t",timer(),"\tUnable to create ${bamfile}.vcf\n";
 
   print Fout "POS\tREF\tALT\tDP\t#ALT\tFreq(ALT)\tQual(ALT)\tp-value\tAntibiotic\tComment\n";
+  my $today=scalar localtime;
+  print Fout2 "##fileformat=VCFv4.1
+##fileDate=$today
+##reference=https://www.ncbi.nlm.nih.gov/nuccore/NC_000962.3?report=fasta
+##INFO=<ID=BaseCounts,Number=4,Type=Integer,Description=\"Number of each Base A,C,G,T\">
+##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total Depth\">
+##INFO=<ID=AF,Number=A,Type=Float,Description=\"Allele Frequency\">
+##INFO=<ID=AN,Number=1,Type=String,Description=\"Allele Count\">
+##INFO=<ID=Type,Number=1,Type=String,Description=\"Type of variation. Either SNP or INDEL (Insertion or Deletion)\">
+##INFO=<ID=Qual,Number=1,Type=Integer,Description=\"Mean base quality phred score of the alternative alleles\">
+##FILTER=<ID=p-value,Description=\"P-value below the threshold (default 0.05)\">
+#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\n";
   my @array;
   my $line;
   $line=<Fin>;
@@ -118,15 +131,26 @@ foreach my $file (@bam_files) {
     no warnings 'numeric';
     @array=split("\t", $line);
         if ($array[19]<=$pvalue){
+            if($array[17]!="-"){
             if ($array[2] eq "A"){
-            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[4]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";}
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[4]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";
+            print Fout2 "M.tuberculosis_H37Rv\t$array[0]\t.\t$array[1]\t$array[2]\t.\tPASS\tType=\"SNP\";AF=$array[17];AN=$array[4];DP=$array[3];BaseCounts=$array[4],$array[7],$array[10],$array[13];p-value=$array[19];annotation=$array[20]\t.\n";}
             elsif($array[2] eq "C"){
-            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[7]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";}
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[7]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";
+            print Fout2 "M.tuberculosis_H37Rv\t$array[0]\t.\t$array[1]\t$array[2]\t.\tPASS\tType=\"SNP\";AF=$array[17];AN=$array[7];DP=$array[3];BaseCounts=$array[4],$array[7],$array[10],$array[13];p-value=$array[19];annotation=$array[20]\t.\n";}
             elsif($array[2] eq "G"){
-            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[10]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";}
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[10]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";
+            print Fout2 "M.tuberculosis_H37Rv\t$array[0]\t.\t$array[1]\t$array[2]\t.\tPASS\tType=\"SNP\";AF=$array[17];AN=$array[10];DP=$array[3];BaseCounts=$array[4],$array[7],$array[10],$array[13];p-value=$array[19];annotation=$array[20]\t.\n";}
             elsif($array[2] eq "T"){
-            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[13]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";}
+            print Fout "$array[0]\t$array[1]\t$array[2]\t$array[3]\t$array[13]\t$array[17]\t$array[18]\t$array[19]\t$array[20]\t$array[21]";
+            print Fout2 "M.tuberculosis_H37Rv\t$array[0]\t.\t$array[1]\t$array[2]\t.\tPASS\tType=\"SNP\";AF=$array[17];AN=$array[13];DP=$array[3];BaseCounts=$array[4],$array[7],$array[10],$array[13];p-value=$array[19];annotation=$array[20]\t.\n";}
             else {print "$line\n";}
+            }
+            else{
+            my @DEL;
+            @DEL=split(" ",$array[21]);
+            my $AF=$DEL[2]/$array[3];
+            print Fout2 "M.tuberculosis_H37Rv\t$array[0]\t.\t$array[1]\t$DEL[0]\t.\tPASS\tType=\"INDEL\";AF=$AF;AN=$DEL[2];DP=$array[3];BaseCounts=$array[4],$array[7],$array[10],$array[13];p-value=$array[19];annotation=$array[20]\t.\n";}
         }
     }
   close Fout;
